@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Route Planner</title>
+    <style>
+        /* Basic style to give the map container a size */
+        #map {
+            height: 500px; /* You can adjust this height */
+            width: 100%;
+            border: 1px solid #ccc; /* Optional border */
+        }
+        /* Optional: Style body */
+        body {
+            font-family: sans-serif;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Travel Plans</h1>
+    <p>Left click to ADD a stop, and 
+Right click to REMOVE a stop. Click button below these instructions to start and end PATHS
+Click on locations to open and close text. Drag and drop the yellow Google person at bottom right to see images of the location and environs. Google Map functions as usual. Left click and hold,to move mouse to locations. Scroll mouse wheel to zoom in and out. Reload page twice to clear all.</p>
+<button id="toggle-path-button">Start Path</button>
+
+    <div id="map"></div> <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAFouD3ULMBaEiyw4a62Tr5BIivTTcyVkE&callback=initMap&v=weekly" async></script>
+
+    <script src="app.js"></script>
+</body>
+</html>
