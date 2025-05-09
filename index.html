@@ -62,15 +62,16 @@
 
         .main-container { 
             display: flex; 
+            /* flex-wrap: wrap; Removed to prevent legend from wrapping below map on slightly constrained widths */
         }
         .map-area { 
-            flex-grow: 1; 
+            flex-grow: 1; /* Map area will take up remaining space */
             min-width: 300px; 
-            margin-right: 10px; 
+            margin-right: 10px; /* Add some space between map and legend */
         }
         #map { 
             height: 500px; 
-            width: 100%; 
+            width: 100%; /* Map will fill the .map-area */
             border: 1px solid #ccc; 
             position: relative; 
         }
@@ -85,11 +86,12 @@
 
         #legend-container {
             width: 220px; 
-            flex-shrink: 0; 
+            flex-shrink: 0; /* Prevent legend from shrinking if space is tight */
             max-height: 500px; 
             overflow-y: auto; 
             border: 1px solid #ccc;
             padding: 10px;
+            /* margin-left: 10px; Replaced by margin-right on .map-area */
             background-color: #f9f9f9;
             border-radius: 5px; 
         }
@@ -120,16 +122,16 @@
             cursor: pointer; 
         }
         
-        @media (max-width: 768px) { 
+        @media (max-width: 768px) { /* Increased breakpoint for more reliable stacking */
             .main-container {
                 flex-direction: column;
             }
             .map-area {
-                margin-right: 0; 
-                margin-bottom: 10px; 
+                margin-right: 0; /* No right margin when stacked */
+                margin-bottom: 10px; /* Space between map and legend when stacked */
             }
             #legend-container {
-                width: 100%; 
+                width: 100%; /* Full width on smaller screens */
                 margin-left: 0;
                 margin-top: 10px; 
             }
