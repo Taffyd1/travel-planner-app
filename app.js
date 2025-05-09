@@ -296,7 +296,7 @@ function drawMarker(pointId, pointData) { // pointData contains all info about t
 
     // Click listener for the marker
     marker.addListener('click', () => {
-        if (currentPathCreation.isCreating && pointData.userId === auth.currentUser.uid) {
+        if (currentPathCreation.isCreating && auth.currentUser && pointData.userId === auth.currentUser.uid) {
             // Add this marker's point to the current path being created
             const pointLocation = { lat: pointData.coordinates.latitude, lng: pointData.coordinates.longitude };
             currentPathCreation.points.push(pointLocation);
@@ -305,7 +305,7 @@ function drawMarker(pointId, pointData) { // pointData contains all info about t
                 drawTemporaryPolyline(currentPathCreation.points); // Update temporary visual path
             }
             infoWindow.close(); // Close any open info window
-        } else if (pointData.userId === auth.currentUser.uid) {
+        } else if (auth.currentUser && pointData.userId === auth.currentUser.uid) {
             // Allow editing notes for own markers
             const content = document.createElement('div');
             // Use unique IDs for textarea and button to avoid conflicts if multiple infoWindows are somehow open
@@ -329,19 +329,19 @@ function drawMarker(pointId, pointData) { // pointData contains all info about t
                 }
             });
             infoWindow.setContent(content);
-            infoWindow.setPosition(position); // Not strictly needed for AdvancedMarkerElement with open(map, marker)
+            // infoWindow.setPosition(position); // Not strictly needed for AdvancedMarkerElement with open(map, marker)
             infoWindow.open({map: map, anchor: marker}); // Recommended way for AdvancedMarkerElement
         } else {
             // For other users' markers, just show info
             infoWindow.setContent(`<div class="infowindow-content">User: ${pointData.userId}<br>Note: ${pointData.note || 'No note'}</div>`);
-            infoWindow.setPosition(position);
+            // infoWindow.setPosition(position);
             infoWindow.open({map: map, anchor: marker});
         }
     });
 
     // Right-click to delete own marker (contextmenu for AdvancedMarkerElement)
-    if (pointData.userId === auth.currentUser.uid) {
-        marker.addListener('contextmenu', (e) => {
+    if (auth.currentUser && pointData.userId === auth.currentUser.uid) {
+        marker.addListener('contextmenu', (e) => { // Note: 'contextmenu' event for AdvancedMarkerElement
             if (confirm("Are you sure you want to delete this marker?")) {
                 if (db) {
                     db.collection('points').doc(pointId).delete()
