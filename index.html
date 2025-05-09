@@ -2,7 +2,8 @@
 <html>
 <head>
     <title>My Route Planner (Firebase + Path)</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
         body { 
             font-family: sans-serif; 
             margin: 10px; 
@@ -40,38 +41,37 @@
             line-height: 1.6;
         }
 
-        /* --- Style for the Start Path / End Path button --- */
         #toggle-path-button { 
-            display: inline-block; /* Allows setting padding/margin, width adjusts to content */
-            width: auto;           /* Ensures width is based on content, not full container width */
+            display: inline-block; 
+            width: auto;          
             padding: 10px 15px;
-            background-color: #007bff; /* Blue color for primary action */
+            background-color: #007bff; 
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             margin-bottom: 15px; 
             text-align: center;
-            /* The inline style="display: none;" in HTML will be overridden by JS when user logs in */
         }
         #toggle-path-button:hover {
-            background-color: #0056b3; /* Darker blue on hover */
+            background-color: #0056b3; 
         }
-        #toggle-path-button.active { /* Style when path creation is active */
-            background-color: #dc3545; /* Red color for "End Path" state */
+        #toggle-path-button.active { 
+            background-color: #dc3545; 
         }
 
         .main-container { 
             display: flex; 
-            flex-wrap: wrap; 
+            /* flex-wrap: wrap; Removed to prevent legend from wrapping below map on slightly constrained widths */
         }
         .map-area { 
-            flex-grow: 1; 
+            flex-grow: 1; /* Map area will take up remaining space */
             min-width: 300px; 
+            margin-right: 10px; /* Add some space between map and legend */
         }
         #map { 
             height: 500px; 
-            width: 100%; 
+            width: 100%; /* Map will fill the .map-area */
             border: 1px solid #ccc; 
             position: relative; 
         }
@@ -84,14 +84,14 @@
             margin-bottom: 5px; 
         }
 
-        /* --- Legend Styles --- */
         #legend-container {
             width: 220px; 
+            flex-shrink: 0; /* Prevent legend from shrinking if space is tight */
             max-height: 500px; 
             overflow-y: auto; 
             border: 1px solid #ccc;
             padding: 10px;
-            margin-left: 10px; 
+            /* margin-left: 10px; Replaced by margin-right on .map-area */
             background-color: #f9f9f9;
             border-radius: 5px; 
         }
@@ -122,12 +122,16 @@
             cursor: pointer; 
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 768px) { /* Increased breakpoint for more reliable stacking */
             .main-container {
                 flex-direction: column;
             }
+            .map-area {
+                margin-right: 0; /* No right margin when stacked */
+                margin-bottom: 10px; /* Space between map and legend when stacked */
+            }
             #legend-container {
-                width: 100%; 
+                width: 100%; /* Full width on smaller screens */
                 margin-left: 0;
                 margin-top: 10px; 
             }
@@ -162,18 +166,18 @@
 
     <script>
         // Your Firebase configuration object
-        // This object is used by app.js to initialize Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyBczrD-6WlGdqWwTxnUNpE09fd81TjE_FA", // From your earlier code
+            apiKey: "AIzaSyBczrD-6WlGdqWwTxnUNpE09fd81TjE_FA", 
             authDomain: "travel-app-465e4.firebaseapp.com",
             projectId: "travel-app-465e4",
-            storageBucket: "travel-app-465e4.appspot.com", // Please verify this: .appspot.com or .firebasestorage.app
+            storageBucket: "travel-app-465e4.appspot.com", 
             messagingSenderId: "381511835838",
             appId: "1:381511835838:web:c340bab9da6616f4f83eef"
         };   
     </script>
 
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAFouD3ULMBaEiyw4a62Tr5BIivTTcyVkE&callback=initMap&v=weekly" async defer></script>
+
     <script src="app.js" defer></script>
 
 </body>

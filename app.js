@@ -154,41 +154,54 @@ function initMap() {
         return;
     }
     map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 39.099724, lng: -94.578331 }, // Example: Kansas City
-        zoom: 5,
-        streetViewControl: false,
-        mapTypeControl: true,
-        fullscreenControl: false,
+        center: { lat: 39.8283, lng: -98.5795 }, // Centered more on the US
+        zoom: 4, // Adjusted zoom level
+        // --- UPDATED MAP CONTROLS ---
+        streetViewControl: true,    // Enables Pegman for Street View
+        mapTypeControl: true,       // Allows toggling Map/Satellite
+        fullscreenControl: true,    // Allows user to make map fullscreen
+        zoomControl: true,          // Shows zoom controls
+        scaleControl: true,         // Shows map scale
+        rotateControl: true,        // Shows rotate control (for 45-degree imagery)
+        // --- END OF UPDATED MAP CONTROLS ---
     });
-    console.log('Map initialized!');
+    console.log('Map initialized with updated controls!');
 
     infoWindow = new google.maps.InfoWindow();
     console.log('InfoWindow initialized.');
 
+    // --- MODIFIED MAP CLICK LISTENER WITH MORE LOGGING ---
     map.addListener('click', (mapsMouseEvent) => {
-        if (auth && auth.currentUser) { // Check auth and currentUser
+        console.log("Map clicked. Checking conditions to add point...");
+        if (auth && auth.currentUser) {
+            console.log("User is signed in:", auth.currentUser.uid);
             if (currentPathCreation.isCreating) {
+                console.log("Path creation mode is active. Not adding new point. Showing info window.");
                 infoWindow.setContent('Click on one of your existing markers to add it to the path, or click "End Path".');
                 infoWindow.setPosition(mapsMouseEvent.latLng);
                 infoWindow.open(map);
                 return;
             }
+            console.log("Path creation mode is NOT active. Proceeding to add point.");
             const pointData = {
                 coordinates: new firebase.firestore.GeoPoint(mapsMouseEvent.latLng.lat(), mapsMouseEvent.latLng.lng()),
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 userId: auth.currentUser.uid,
                 note: "New stop"
             };
-            if (db) { // Check if db is initialized
+            if (db) {
+                console.log("Attempting to add point to Firestore:", pointData);
                 db.collection('points').add(pointData).then(docRef => {
-                    console.log("Point added with ID: ", docRef.id);
+                    console.log("Point successfully added to Firestore with ID: ", docRef.id);
                 }).catch(error => {
-                    console.error("Error adding point: ", error);
+                    console.error("Error adding point to Firestore: ", error);
                 });
             } else {
                 console.error("Firestore (db) not initialized. Cannot add point.");
+                alert("Database not available. Cannot add point.");
             }
         } else {
+            console.log("User is NOT signed in. Alerting user.");
             alert("Please sign in to add points.");
         }
     });
