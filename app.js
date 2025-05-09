@@ -1,34 +1,33 @@
-// Ensure this is your actual Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBczrD-6WlGdqWwTxnUNpE09fd81TjE_FA",
-  authDomain: "travel-app-465e4.firebaseapp.com",
-  projectId: "travel-app-465e4",
-  storageBucket: "travel-app-465e4.firebasestorage.app",
-  messagingSenderId: "381511835838",
-  appId: "1:381511835838:web:c340bab9da6616f4f83eef",
-  measurementId: "G-6WDRB1C5QP"
- };
+// IMPORTANT: firebaseConfig should be defined in your HTML file's inline <script> tag
+// BEFORE this app.js script is loaded.
+// This app.js file will USE that globally available firebaseConfig object.
+// DO NOT re-declare 'const firebaseConfig = { ... };' here.
 
 // Initialize Firebase
-// It's assumed firebaseConfig is globally available from your HTML's inline script
-// or you can uncomment and place your config object above.
+// It's assumed firebaseConfig is globally available from your HTML's inline script.
 let firebaseApp;
 let auth;
 let db;
 
 try {
+    // Check if the global 'firebase' object (from SDK) and 'firebaseConfig' (from your HTML) exist
     if (typeof firebase !== 'undefined' && typeof firebaseConfig !== 'undefined') {
         if (!firebase.apps.length) { // Check if Firebase hasn't been initialized yet
-            firebaseApp = firebase.initializeApp(firebaseConfig);
-            console.log("Firebase Initialized (from app.js)");
+            firebaseApp = firebase.initializeApp(firebaseConfig); // Uses the firebaseConfig from your HTML
+            console.log("Firebase Initialized (from app.js using HTML's firebaseConfig)");
         } else {
             firebaseApp = firebase.app(); // Get the default app if already initialized
-            console.log("Firebase already initialized, using existing app.");
+            console.log("Firebase already initialized, using existing app (from app.js).");
         }
         auth = firebase.auth(); // Firebase Authentication service
         db = firebase.firestore(); // Firestore Database service
     } else {
-        console.error("Firebase or firebaseConfig is not defined. Ensure Firebase SDKs are loaded and firebaseConfig is set.");
+        if (typeof firebase === 'undefined') {
+            console.error("Firebase SDK not loaded before app.js tried to initialize Firebase.");
+        }
+        if (typeof firebaseConfig === 'undefined') {
+            console.error("firebaseConfig object not found. Ensure it's defined in an inline script in your HTML before app.js is loaded.");
+        }
     }
 } catch (e) {
     console.error("Error initializing Firebase in app.js: ", e);
