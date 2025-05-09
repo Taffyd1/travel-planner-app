@@ -1,179 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Route Planner (Firebase + Path)</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <style>
-        body { 
-            font-family: sans-serif; 
-            margin: 10px; 
-            display: flex; 
-            flex-direction: column; 
-        }
-        h1 {
-            margin-bottom: 10px;
-        }
-        #auth-container { 
-            margin-bottom: 10px; 
-            padding: 8px; 
-            background-color: #f0f0f0; 
-            border-radius: 5px; 
-            display: flex; 
-            align-items: center; 
-        }
-        #auth-container button { 
-            margin: 0 5px; 
-            padding: 8px 12px; 
-            border: 1px solid #ccc;
-            background-color: #fff;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        #auth-container button:hover {
-            background-color: #e9e9e9;
-        }
-        #user-info { 
-            margin: 0 10px; 
-            font-weight: bold;
-        }
-        .instructions { 
-            margin-bottom: 15px;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Travel Itinerary</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
             line-height: 1.6;
         }
-
-        /* --- Style for the Start Path / End Path button --- */
-        #toggle-path-button { 
-            display: inline-block; /* Allows setting padding/margin, width adjusts to content */
-            width: auto;           /* Ensures width is based on content, not full container width */
+        .input-section, .itinerary-section, .share-section, .controls-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        label {
+            display: inline-block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="datetime-local"] {
+            width: calc(100% - 22px); /* Adjust for padding and border */
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
             padding: 10px 15px;
-            background-color: #007bff; /* Blue color for primary action */
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin-bottom: 15px; 
-            text-align: center;
-            /* The inline style="display: none;" in HTML will be overridden by JS when user logs in */
+            font-size: 1em;
+            margin-right: 10px; /* Space between buttons */
         }
-        #toggle-path-button:hover {
-            background-color: #0056b3; /* Darker blue on hover */
+        button:hover {
+            background-color: #0056b3;
         }
-        #toggle-path-button.active { /* Style when path creation is active */
-            background-color: #dc3545; /* Red color for "End Path" state */
+        #itinerary-list {
+            list-style-type: none;
+            padding: 0;
         }
-
-        .main-container { 
-            display: flex; 
-            flex-wrap: wrap; 
-        }
-        .map-area { 
-            flex-grow: 1; 
-            min-width: 300px; 
-        }
-        #map { 
-            height: 500px; 
-            width: 100%; 
-            border: 1px solid #ccc; 
-            position: relative; 
-        }
-        .infowindow-content { 
-            width: 200px; 
-        }
-        .infowindow-content textarea { 
-            width: 95%; 
-            margin-top: 5px; 
-            margin-bottom: 5px; 
-        }
-
-        /* --- Legend Styles --- */
-        #legend-container {
-            width: 220px; 
-            max-height: 500px; 
-            overflow-y: auto; 
-            border: 1px solid #ccc;
+        #itinerary-list li {
+            background-color: #fff;
             padding: 10px;
-            margin-left: 10px; 
-            background-color: #f9f9f9;
-            border-radius: 5px; 
+            border-bottom: 1px solid #eee;
+            margin-bottom: 5px;
+            border-radius: 3px;
         }
-        #legend-container h4 { 
-            margin-top: 0; 
-            font-size: 1.1em; 
-            border-bottom: 1px solid #eee; 
-            padding-bottom: 5px;
-            margin-bottom: 10px;
+        #itinerary-list li:last-child {
+            border-bottom: none;
         }
-        #legend-list { 
-            list-style: none; 
-            padding: 0; 
-            margin: 0; 
-        }
-        #legend-list li { 
-            margin-bottom: 8px; 
-            display: flex; 
-            align-items: center; 
-        }
-        #legend-list input[type="checkbox"] { 
-            margin-right: 8px; 
-            cursor: pointer;
-        }
-        #legend-list label { 
-            display: inline-flex; 
-            align-items: center; 
-            cursor: pointer; 
-        }
-        
-        @media (max-width: 768px) {
-            .main-container {
-                flex-direction: column;
+
+        /* Responsive adjustments */
+        @media screen and (max-width: 600px) {
+            body {
+                font-size: 14px;
+                margin: 10px;
             }
-            #legend-container {
-                width: 100%; 
-                margin-left: 0;
-                margin-top: 10px; 
+            .input-section, .itinerary-section, .share-section, .controls-section {
+                padding: 10px;
+            }
+            input[type="text"], input[type="datetime-local"], button {
+                width: 100%; /* Full width for inputs and buttons on small screens */
+                margin-bottom: 10px;
+            }
+            button {
+                margin-right: 0; /* Remove right margin for stacked buttons */
             }
         }
     </style>
 </head>
 <body>
-    <h1>Travel Plans (Live Sharing)</h1> 
-    
-    <div id="auth-container">
-        <button id="sign-in-button" style="display: none;">Sign In with Google</button>
-        <span id="user-info" style="display: none;"></span> 
-        <button id="sign-out-button" style="display: none;">Sign Out</button>
+    <h1>My Travel Itinerary Planner</h1>
+
+    <div class="input-section">
+        <h2>Add New Location</h2>
+        <label for="location">Location:</label>
+        <input type="text" id="location" name="location" placeholder="e.g., Eiffel Tower"><br>
+
+        <label for="start-time">Estimated Start:</label>
+        <input type="datetime-local" id="start-time" name="start-time"><br>
+
+        <label for="end-time">Estimated End:</label>
+        <input type="datetime-local" id="end-time" name="end-time"><br>
+
+        <button onclick="addLocation()">Add to Itinerary</button>
     </div>
 
-    <p class="instructions">
-        Instructions: Login. Left-click map to add YOUR stops. Left-click YOUR markers to edit notes, Right-click YOUR markers to remove. 
-        Use Legend to the right of map to show/hide users. Define YOUR path using 'Start/End Path' bar & clicking markers.
-    </p>
-    
-    <button id="toggle-path-button" style="display: none;">Start Path</button>
-
-    <div class="main-container">
-        <div id="map" class="map-area"></div>
-        <div id="legend-container">
-            </div>
+    <div class="itinerary-section">
+        <h2>My Travel Itinerary</h2>
+        <ul id="itinerary-list" aria-live="polite">
+            </ul>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <div class="controls-section">
+        <h2>Manage Itinerary</h2>
+        <button onclick="saveItinerary()">Save Itinerary</button>
+        <button onclick="generateShareLink()">Generate Shareable Link</button>
+    </div>
+
+    <div class="share-section">
+        <h2>Share Your Plans</h2>
+        <p>Click "Generate Shareable Link" above to get a link you can send to others. They will see the itinerary as it was when you generated the link.</p>
+    </div>
 
     <script>
-        // Your Firebase configuration object
-        const firebaseConfig = {
-            apiKey: "AIzaSyBczrD-6WlGdqWwTxnUNpE09fd81TjE_FA", // From your earlier code
-            authDomain: "travel-app-465e4.firebaseapp.com",
-            projectId: "travel-app-465e4",
-            storageBucket: "travel-app-465e4.appspot.com", // Please verify this: .appspot.com or .firebasestorage.app
-            messagingSenderId: "381511835838",
-            appId: "1:381511835838:web:c340bab9da6616f4f83eef"
-        };   
+        // --- Date/Time Validation ---
+        function validateDateTime(dateTimeString) {
+            // For datetime-local, the browser handles format validation mostly.
+            // We just need to ensure it's not empty.
+            // More complex validation (e.g., end time after start time) could be added.
+            return dateTimeString !== ""; 
+        }
+
+        // --- Add Location to Itinerary ---
+        function addLocation() {
+            const locationInput = document.getElementById('location');
+            const startTimeInput = document.getElementById('start-time');
+            const endTimeInput = document.getElementById('end-time');
+            const itineraryList = document.getElementById('itinerary-list');
+
+            const location = locationInput.value.trim();
+            const startTime = startTimeInput.value; // datetime-local gives value in YYYY-MM-DDTHH:mm
+            const endTime = endTimeInput.value;
+
+            if (!location) {
+                alert('Please enter a location.');
+                return;
+            }
+            // Basic check, browser input type="datetime-local" handles format.
+            if (!startTime || !endTime) { 
+                alert('Please enter both a start and end date/time.');
+                return;
+            }
+            // Optional: More complex validation like start time before end time
+            if (new Date(startTime) >= new Date(endTime)) {
+                alert('End time must be after start time.');
+                return;
+            }
+
+
+            const listItem = document.createElement('li');
+            // Format date/time for display if needed, or use as is
+            const formattedStartTime = startTime.replace('T', ' ');
+            const formattedEndTime = endTime.replace('T', ' ');
+            listItem.textContent = `${location} (From: ${formattedStartTime} To: ${formattedEndTime})`;
+            itineraryList.appendChild(listItem);
+
+            // Clear input fields after adding
+            locationInput.value = '';
+            startTimeInput.value = '';
+            endTimeInput.value = '';
+        }
+
+        // --- Save Itinerary to Local Storage ---
+        function saveItinerary() {
+            const itineraryList = document.getElementById('itinerary-list');
+            const items = itineraryList.getElementsByTagName('li');
+            const itineraryData = [];
+
+            for (let item of items) {
+                itineraryData.push(item.textContent); // Storing the displayed text
+            }
+
+            if (itineraryData.length > 0) {
+                localStorage.setItem('itinerary', JSON.stringify(itineraryData));
+                alert('Itinerary saved locally!');
+            } else {
+                alert('Nothing to save.');
+            }
+        }
+
+        // --- Load Itinerary from Local Storage ---
+        function loadItinerary() {
+            const savedItinerary = localStorage.getItem('itinerary');
+            if (savedItinerary) {
+                const itineraryList = document.getElementById('itinerary-list');
+                const itineraryData = JSON.parse(savedItinerary);
+
+                itineraryData.forEach(itemText => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = itemText;
+                    itineraryList.appendChild(listItem);
+                });
+            }
+        }
+        
+        // --- Generate Shareable Link ---
+        function generateShareLink() {
+            const itineraryList = document.getElementById('itinerary-list');
+            const items = itineraryList.getElementsByTagName('li');
+            const itineraryData = [];
+
+            for (let item of items) {
+                itineraryData.push(item.textContent); // Storing the displayed text
+            }
+
+            if (itineraryData.length > 0) {
+                // Construct the URL with itinerary data as a query parameter
+                const shareableLink = `${window.location.origin}${window.location.pathname}?itinerary=${encodeURIComponent(JSON.stringify(itineraryData))}`;
+                
+                // Prompt user with the link (could also copy to clipboard or display in a read-only input)
+                prompt("Copy this link to share your itinerary:", shareableLink);
+            } else {
+                alert('Your itinerary is empty. Add some locations first!');
+            }
+        }
+
+        // --- Load Itinerary and Parse URL on Page Load ---
+        window.onload = function() {
+            loadItinerary(); // Load from local storage first
+
+            // Check if itinerary data is present in the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const itineraryParam = urlParams.get('itinerary');
+
+            if (itineraryParam) {
+                try {
+                    const itineraryDataFromLink = JSON.parse(decodeURIComponent(itineraryParam));
+                    const itineraryList = document.getElementById('itinerary-list');
+                    itineraryList.innerHTML = ''; // Clear existing list if loading from link
+
+                    itineraryDataFromLink.forEach(itemText => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = itemText;
+                        itineraryList.appendChild(listItem);
+                    });
+                    alert('Itinerary loaded from shared link!');
+                } catch (e) {
+                    console.error("Error parsing itinerary data from URL:", e);
+                    alert("Could not load itinerary from the link. The link might be corrupted.");
+                }
+            }
+        };
     </script>
-
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAFouD3ULMBaEiyw4a62Tr5BIivTTcyVkE&callback=initMap&v=weekly" async defer></script>
-    <script src="app.js" defer></script>
-
 </body>
 </html>
