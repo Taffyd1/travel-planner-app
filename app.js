@@ -289,7 +289,15 @@ function drawMarker(pointId, pointData) { // pointData contains all info about t
     const position = { lat: pointData.coordinates.latitude, lng: pointData.coordinates.longitude };
     const userColor = userColors[pointData.userId] || '#FE7569'; // Default color if not found
 
-    // Using AdvancedMarkerElement
+    // --- ADDED CHECK for google.maps.marker and PinElement ---
+    if (!google.maps.marker || !google.maps.marker.PinElement) {
+        console.error("Google Maps Marker library (for PinElement/AdvancedMarkerElement) not loaded correctly. Check API script tag for '&libraries=marker'.");
+        // Fallback to old marker style if needed, or just return
+        // For now, just log error and return to prevent further issues.
+        return; 
+    }
+    // --- END OF ADDED CHECK ---
+
     const markerPin = new google.maps.marker.PinElement({
         background: userColor,
         borderColor: darkenColor(userColor, 20), // Darken border for better contrast
