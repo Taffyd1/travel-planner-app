@@ -128,7 +128,11 @@ function initMap() {
         console.error("Map container element (#map) not found in DOM. Map cannot be initialized.");
         return;
     }
-    map = new google.maps.Map(document.getElementById('map'), { // Assign to global 'map'
+
+    // !!! YOUR MAP ID IS USED HERE !!!
+    const YOUR_MAP_ID = '374429077b81755441e361b8'; 
+
+    map = new google.maps.Map(document.getElementById('map'), { 
         center: { lat: 39.8283, lng: -98.5795 }, 
         zoom: 4, 
         streetViewControl: true,    
@@ -136,9 +140,10 @@ function initMap() {
         fullscreenControl: true,    
         zoomControl: true,          
         scaleControl: true,         
-        rotateControl: true,        
+        rotateControl: true,
+        mapId: YOUR_MAP_ID // Add your Map ID here
     });
-    console.log('Map initialized with updated controls!');
+    console.log(`Map initialized with Map ID: ${YOUR_MAP_ID} and updated controls!`);
 
     infoWindow = new google.maps.InfoWindow();
     console.log('InfoWindow initialized.');
@@ -234,7 +239,7 @@ function setupFirestoreListeners(currentUserIdInternal) {
                 drawPolyline(pathUserId, userPathData[pathUserId]);
                 usersForLegend.add(pathUserId);
             } else {
-                console.warn("Invalid path data found:", pathUserId, path); // Log specific path ID
+                console.warn("Invalid path data found:", pathUserId, path); 
             }
         });
         console.log('Finished processing path snapshot.');
@@ -247,7 +252,7 @@ function setupFirestoreListeners(currentUserIdInternal) {
 
 // --- MAP DRAWING FUNCTIONS ---
 function drawMarker(pointId, pointData) { 
-    if (!map || typeof map.setCenter !== 'function') { // Check if map is initialized
+    if (!map || typeof map.setCenter !== 'function') { 
         console.warn("drawMarker called but map is not ready. Aborting.");
         return;
     }
@@ -269,7 +274,7 @@ function drawMarker(pointId, pointData) {
     });
     const marker = new google.maps.marker.AdvancedMarkerElement({
         position: position,
-        map: map, // Assign the global map object here
+        map: map, 
         title: `User: ${pointData.userId}\nNote: ${pointData.note || ''}`, 
         content: markerPin.element, 
     });
@@ -351,7 +356,6 @@ function drawPolyline(userId, pathCoordinates) {
     userPolylines[userId] = polyline; 
 
     const legendCheckbox = document.getElementById(`legend-user-${userId}`);
-    // Correctly use map or null for setMap
     polyline.setMap(legendCheckbox && legendCheckbox.checked ? map : null);
 }
 
@@ -488,8 +492,6 @@ function handleLegendCheckboxChange(event) {
     const checkbox = event.target;
     const userId = checkbox.dataset.userId; 
     const isChecked = checkbox.checked;
-
-    // Correctly use map or null for setMap
     const targetMap = isChecked ? map : null;
 
     for (const pointId in markers) {
@@ -502,28 +504,22 @@ function handleLegendCheckboxChange(event) {
     }
 }
 
-// --- CORRECTED updatePolylineVisibilityBasedOnLegend ---
 function updatePolylineVisibilityBasedOnLegend() {
     console.log("Updating polyline and marker visibility based on legend state.");
-    if (!map || typeof map.setCenter !== 'function') { // Check if map is a valid Google Map object
+    if (!map || typeof map.setCenter !== 'function') { 
         console.warn("Map object not ready in updatePolylineVisibilityBasedOnLegend. Aborting visibility update.");
         return;
     }
-
-    // Update polylines
     for (const userId in userPolylines) {
         if (userPolylines[userId]) { 
             const checkbox = document.getElementById(`legend-user-${userId}`);
-            // If checkbox exists and is checked, show on map; otherwise, remove (setMap(null))
             userPolylines[userId].setMap(checkbox && checkbox.checked ? map : null);
         }
     }
-    // Update markers
     for (const pointId in markers) {
         const marker = markers[pointId];
         if (marker && marker.pointOwnerUserId) { 
             const checkbox = document.getElementById(`legend-user-${marker.pointOwnerUserId}`);
-            // If checkbox exists and is checked, show on map; otherwise, remove (setMap(null))
             marker.setMap(checkbox && checkbox.checked ? map : null);
         }
     }
