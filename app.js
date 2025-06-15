@@ -50,10 +50,10 @@ let currentPathCreation = {
 const signInButton = document.getElementById('sign-in-button');
 const signOutButton = document.getElementById('sign-out-button');
 const userInfoDisplay = document.getElementById('user-info');
-const togglePathButton = document.getElementById('toggle-path-button');
+const togglePathButton = document.getElementById('toggle-path-button'); 
 
 // --- AUTHENTICATION ---
-if (auth) {
+if (auth) { 
     auth.onAuthStateChanged(user => {
         if (user) {
             console.log('Auth state: Signed In:', user.uid);
@@ -63,13 +63,13 @@ if (auth) {
             if(userInfoDisplay) userInfoDisplay.style.display = 'inline';
 
             if (togglePathButton) {
-                togglePathButton.style.display = 'inline';
+                togglePathButton.style.display = 'inline'; 
                 console.log('togglePathButton display set to inline (visible).');
             } else {
                 console.error('togglePathButton element not found in DOM during auth state change (signed in).');
             }
             setupFirestoreListeners(user.uid);
-            assignUserColor(user.uid);
+            assignUserColor(user.uid); 
         } else {
             console.log('Auth state: Signed Out');
             if(userInfoDisplay) userInfoDisplay.textContent = '';
@@ -85,7 +85,7 @@ if (auth) {
             }
             clearAllMarkers();
             clearAllPolylines();
-            updateLegend([]);
+            updateLegend([]); 
         }
     });
 } else {
@@ -94,7 +94,7 @@ if (auth) {
 
 if (signInButton) {
     signInButton.addEventListener('click', () => {
-        if (auth) {
+        if (auth) { 
             const provider = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(provider).catch(error => {
                 console.error("Sign-in error", error);
@@ -110,7 +110,7 @@ if (signInButton) {
 
 if (signOutButton) {
     signOutButton.addEventListener('click', () => {
-        if (auth) {
+        if (auth) { 
             auth.signOut().catch(error => {
                 console.error("Sign-out error", error);
             });
@@ -129,19 +129,18 @@ function initMap() {
         return;
     }
 
-    // !!! YOUR MAP ID IS USED HERE !!!
-    const YOUR_MAP_ID = '374429077b81755441e361b8'; // Replace with your actual Map ID if different
+    const YOUR_MAP_ID = '374429077b81755441e361b8'; // Your actual Map ID
 
-    map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 39.8283, lng: -98.5795 },
-        zoom: 4,
-        streetViewControl: true,
-        mapTypeControl: true,
-        fullscreenControl: true,
-        zoomControl: true,
-        scaleControl: true,
+    map = new google.maps.Map(document.getElementById('map'), { 
+        center: { lat: 39.8283, lng: -98.5795 }, 
+        zoom: 4, 
+        streetViewControl: true,    
+        mapTypeControl: true,       
+        fullscreenControl: true,    
+        zoomControl: true,          
+        scaleControl: true,         
         rotateControl: true,
-        mapId: YOUR_MAP_ID
+        mapId: YOUR_MAP_ID 
     });
     console.log(`Map initialized with Map ID: ${YOUR_MAP_ID} and updated controls!`);
 
@@ -164,7 +163,7 @@ function initMap() {
                 coordinates: new firebase.firestore.GeoPoint(mapsMouseEvent.latLng.lat(), mapsMouseEvent.latLng.lng()),
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 userId: auth.currentUser.uid,
-                note: "New stop" // Default note
+                note: "New stop"
             };
             if (db) {
                 console.log("Attempting to add point to Firestore:", pointData);
@@ -188,7 +187,7 @@ window.initMap = initMap;
 
 // --- FIRESTORE LISTENERS ---
 function setupFirestoreListeners(currentUserIdInternal) {
-    if (!db) {
+    if (!db) { 
         console.error("Firestore (db) not initialized. Cannot set up listeners.");
         return;
     }
@@ -197,164 +196,122 @@ function setupFirestoreListeners(currentUserIdInternal) {
 
     console.log('Setting up listener for ALL points...');
     window.pointsListenerUnsubscribe = db.collection('points').onSnapshot(snapshot => {
-        console.log('Points snapshot: Processing', snapshot.docChanges().length, 'changes for', snapshot.size, 'total points.');
-        const usersForLegend = new Set(); // Collect all user IDs for legend update
-
-        snapshot.docChanges().forEach(change => {
-            const pointId = change.doc.id;
-            const point = change.doc.data();
-
-            if (change.type === "added" || change.type === "modified") {
-                if (point.coordinates && typeof point.coordinates.latitude === 'number' && typeof point.coordinates.longitude === 'number') {
-                    assignUserColor(point.userId); // Ensure color is assigned
-                    drawMarker(pointId, point); // Add or update marker
-                    usersForLegend.add(point.userId);
-                } else {
-                    console.warn("Invalid point data found (missing/invalid coordinates):", pointId, point);
-                }
-            } else if (change.type === "removed") {
-                if (markers[pointId]) {
-                    markers[pointId].setMap(null); // Remove marker from map
-                    delete markers[pointId]; // Remove from our tracking object
-                    console.log("Marker removed from map due to Firestore deletion:", pointId);
-                }
-            }
-        });
-        
-        // After processing changes, ensure all existing markers are still valid
-        // and collect all user IDs currently having markers for the legend.
-        // This handles cases where initial load might miss some, or for a full refresh.
-        clearAllMarkers(); // Clear existing markers before redrawing based on the full snapshot
+        console.log('Points snapshot: Processing', snapshot.size, 'points.');
+        clearAllMarkers();
+        const usersForLegend = new Set();
         snapshot.forEach(doc => {
             const point = doc.data();
             const pointId = doc.id;
             if (point.coordinates && typeof point.coordinates.latitude === 'number' && typeof point.coordinates.longitude === 'number') {
                 assignUserColor(point.userId);
-                drawMarker(pointId, point);
+                drawMarker(pointId, point); 
                 usersForLegend.add(point.userId);
+            } else {
+                console.warn("Invalid point data found (missing/invalid coordinates):", pointId, point);
             }
         });
-
-
         console.log('Finished updating map from points snapshot.');
         updateLegend(Array.from(usersForLegend));
-        updatePolylineVisibilityBasedOnLegend(); // Ensure polylines also respect legend
+        updatePolylineVisibilityBasedOnLegend();
     }, error => {
         console.error("Error fetching points: ", error);
     });
 
     console.log('Setting up listener for ALL paths...');
     window.pathsListenerUnsubscribe = db.collection('paths').onSnapshot(snapshot => {
-        console.log('Paths snapshot: Processing', snapshot.docChanges().length, 'changes for', snapshot.size, 'total paths.');
-        const usersWithPathsForLegend = new Set(Object.keys(userColors).filter(uid => userPathData[uid])); // Start with users we know have colors and paths
-
+        console.log('Paths snapshot:', snapshot.size, 'docs.');
         snapshot.docChanges().forEach(change => {
-            const pathUserId = change.doc.id; // Path document ID is the User ID
-            const pathData = change.doc.data();
-
-            if (change.type === "added" || change.type === "modified") {
-                if (pathData.coordinates && Array.isArray(pathData.coordinates) && pathData.coordinates.length > 1 &&
-                    pathData.coordinates.every(p => p && typeof p.latitude === 'number' && typeof p.longitude === 'number')) {
-                    
-                    userPathData[pathUserId] = pathData.coordinates.map(p => ({ lat: p.latitude, lng: p.longitude }));
-                    assignUserColor(pathUserId); // Ensure color is assigned
-                    drawPolyline(pathUserId, userPathData[pathUserId]);
-                    usersWithPathsForLegend.add(pathUserId);
-                } else {
-                    console.warn("Invalid path data found:", pathUserId, pathData);
-                    // If path becomes invalid, remove its polyline
-                    if (userPolylines[pathUserId]) {
-                        userPolylines[pathUserId].setMap(null);
-                        delete userPolylines[pathUserId];
-                        delete userPathData[pathUserId];
-                    }
-                }
-            } else if (change.type === "removed") {
+            const pathUserId = change.doc.id; 
+            if (userPolylines[pathUserId]) {
+                userPolylines[pathUserId].setMap(null);
+                delete userPolylines[pathUserId]; 
+            }
+             // If a path was removed (e.g. due to having less than 2 points after a marker deletion)
+            if (change.type === "removed") {
+                delete userPathData[pathUserId]; // Clear local cache of path data
+                console.log(`Path for user ${pathUserId} was removed from Firestore, polyline cleared.`);
+            }
+        });
+        const usersForLegend = new Set(Object.keys(userColors)); 
+        snapshot.forEach(doc => {
+            const path = doc.data();
+            const pathUserId = doc.id; 
+            if (path.coordinates && Array.isArray(path.coordinates) && path.coordinates.length > 1 &&
+                path.coordinates.every(p => p && typeof p.latitude === 'number' && typeof p.longitude === 'number')) {
+                userPathData[pathUserId] = path.coordinates.map(p => ({ lat: p.latitude, lng: p.longitude }));
+                assignUserColor(pathUserId); 
+                drawPolyline(pathUserId, userPathData[pathUserId]);
+                usersForLegend.add(pathUserId);
+            } else if (path.coordinates && path.coordinates.length <= 1) {
+                // Path became invalid (e.g., after marker deletion), ensure it's visually cleared
                 if (userPolylines[pathUserId]) {
                     userPolylines[pathUserId].setMap(null);
                     delete userPolylines[pathUserId];
-                    delete userPathData[pathUserId]; // Also clear the path data
-                    console.log("Polyline removed for user:", pathUserId);
                 }
+                delete userPathData[pathUserId];
+                console.log(`Path for user ${pathUserId} is now invalid (<=1 point), polyline cleared.`);
+            } else {
+                console.warn("Invalid path data found (or path removed):", pathUserId, path); 
             }
         });
-        
-        // Collect all user IDs for the legend (those with markers and those with paths)
-        const allUserIdsForLegend = new Set(Object.keys(userColors)); // Get all users that have colors (points or paths)
-        updateLegend(Array.from(allUserIdsForLegend));
-        updatePolylineVisibilityBasedOnLegend();
         console.log('Finished processing path snapshot.');
-
+        updateLegend(Array.from(usersForLegend)); 
+        updatePolylineVisibilityBasedOnLegend();
     }, error => {
         console.error("Error fetching paths: ", error);
     });
 }
 
 // --- MAP DRAWING FUNCTIONS ---
-function drawMarker(pointId, pointData) {
-    if (!map || typeof map.setCenter !== 'function') {
+function drawMarker(pointId, pointData) { 
+    if (!map || typeof map.setCenter !== 'function') { 
         console.warn("drawMarker called but map is not ready. Aborting.");
         return;
     }
-    // If marker already exists, remove it before redrawing (handles updates)
-    if (markers[pointId]) {
+    if (markers[pointId]) { 
         markers[pointId].setMap(null);
     }
-
     const position = { lat: pointData.coordinates.latitude, lng: pointData.coordinates.longitude };
-    const userColor = userColors[pointData.userId] || '#FE7569'; // Default color if not assigned
+    const userColor = userColors[pointData.userId] || '#FE7569'; 
 
-    if (!google.maps.marker || !google.maps.marker.PinElement || !google.maps.marker.AdvancedMarkerElement) {
+    if (!google.maps.marker || !google.maps.marker.PinElement) {
         console.error("Google Maps Marker library (for PinElement/AdvancedMarkerElement) not loaded correctly. Check API script tag for '&libraries=marker'.");
-        // Fallback to old marker if AdvancedMarkerElement is not available (though it should be)
-        const fallbackMarker = new google.maps.Marker({
-            position: position,
-            map: map,
-            title: `User: ${pointData.userId}\nNote: ${pointData.note || ''}`
-            // Add custom icon with color if desired for fallback
-        });
-        markers[pointId] = fallbackMarker; // Store fallback marker
-        // Note: Right-click delete might not work as intended for this fallback without further adjustments.
-        return;
+        return; 
     }
 
     const markerPin = new google.maps.marker.PinElement({
         background: userColor,
-        borderColor: darkenColor(userColor, 20), // Darken border for contrast
-        glyphColor: "white", // Glyph color
+        borderColor: darkenColor(userColor, 20), 
+        glyphColor: "white", 
     });
-
     const marker = new google.maps.marker.AdvancedMarkerElement({
         position: position,
-        map: map,
-        title: `User: ${pointData.userId}\nNote: ${pointData.note || ''}`,
-        content: markerPin.element, // Set the PinElement as the content
+        map: map, 
+        title: `User: ${pointData.userId}\nNote: ${pointData.note || ''}`, 
+        content: markerPin.element, 
     });
 
-    // Store point data with the marker object for easy access
     marker.pointId = pointId;
-    marker.pointOwnerUserId = pointData.userId;
-    marker.pointData = pointData; // Store the full point data
+    marker.pointOwnerUserId = pointData.userId; 
+    marker.pointData = pointData; // Store the full data object on the marker
 
-    // Standard click listener (for info window / path creation)
     marker.addListener('click', () => {
-        console.log(`Marker clicked: ${pointId}, owned by ${pointData.userId}. Current user: ${auth.currentUser ? auth.currentUser.uid : 'none'}`);
         if (currentPathCreation.isCreating && auth.currentUser && pointData.userId === auth.currentUser.uid) {
             const pointLocation = { lat: pointData.coordinates.latitude, lng: pointData.coordinates.longitude };
             currentPathCreation.points.push(pointLocation);
-            console.log("Point added to current path:", pointLocation, "Total points:", currentPathCreation.points.length);
+            console.log("Point added to current path:", pointLocation);
             if (currentPathCreation.points.length > 1) {
-                drawTemporaryPolyline(currentPathCreation.points);
+                drawTemporaryPolyline(currentPathCreation.points); 
             }
-            infoWindow.close(); // Close info window if open
+            infoWindow.close(); 
         } else if (auth.currentUser && pointData.userId === auth.currentUser.uid) {
-            // User owns this marker - allow editing note
             const content = document.createElement('div');
-            content.className = 'infowindow-content p-2'; // Added padding class
             content.innerHTML = `
-                <p class="font-semibold mb-1">Note:</p>
-                <textarea id="note-input-${pointId}" class="w-full h-16 p-1 border border-gray-300 rounded mb-2">${pointData.note || ''}</textarea>
-                <button id="save-note-${pointId}" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Save Note</button>
+                <div class="infowindow-content">
+                    <p><strong>Note:</strong></p>
+                    <textarea id="note-input-${pointId}" style="width:100%; height: 60px;">${pointData.note || ''}</textarea>
+                    <button id="save-note-${pointId}">Save Note</button>
+                </div>
             `;
             const saveNoteButton = content.querySelector(`#save-note-${pointId}`);
             saveNoteButton.addEventListener('click', () => {
@@ -362,172 +319,173 @@ function drawMarker(pointId, pointData) {
                 if (db) {
                     db.collection('points').doc(pointId).update({ note: newNote })
                         .then(() => {
-                            console.log("Note updated for pointId:", pointId);
+                            console.log("Note updated");
                             infoWindow.close();
-                            // The marker's title will be updated on the next Firestore snapshot if title includes note.
-                            // Or, you can update it directly:
-                            // marker.title = `User: ${pointData.userId}\nNote: ${newNote}`;
-                            // pointData.note = newNote; // Update local copy
                         })
                         .catch(error => console.error("Error updating note: ", error));
                 }
             });
             infoWindow.setContent(content);
-            infoWindow.open({ map: map, anchor: marker });
+            infoWindow.open({map: map, anchor: marker}); 
         } else {
-            // User does not own this marker - display read-only info
-            infoWindow.setContent(`<div class="infowindow-content p-2"><p class="font-semibold">User:</p><p>${pointData.userId.substring(0,10)}...</p><p class="font-semibold mt-1">Note:</p><p>${pointData.note || 'No note'}</p></div>`);
-            infoWindow.open({ map: map, anchor: marker });
+            infoWindow.setContent(`<div class="infowindow-content">User: ${pointData.userId}<br>Note: ${pointData.note || 'No note'}</div>`);
+            infoWindow.open({map: map, anchor: marker});
         }
     });
 
-    // MODIFIED: Contextmenu (right-click) listener for deletion
-    // Attach to marker.content for AdvancedMarkerElement
-    if (marker.content && auth.currentUser && pointData.userId === auth.currentUser.uid) {
-        marker.content.addEventListener('contextmenu', (event) => {
-            event.preventDefault(); // IMPORTANT: Prevent default browser context menu
-
-            console.log(`Right-click detected on marker ${pointId} (owned by current user ${auth.currentUser.uid}).`);
-
+    // --- MODIFIED MARKER DELETION LOGIC ---
+    if (auth.currentUser && pointData.userId === auth.currentUser.uid) {
+        marker.addListener('contextmenu', (e) => { 
             if (confirm("Are you sure you want to delete this marker?")) {
+                const deletedPointCoordinates = { 
+                    latitude: pointData.coordinates.latitude, 
+                    longitude: pointData.coordinates.longitude 
+                };
+                const deletedPointUserId = pointData.userId;
+
                 if (db) {
-                    console.log(`Attempting to delete marker ${pointId} from Firestore.`);
                     db.collection('points').doc(pointId).delete()
                         .then(() => {
-                            console.log("Marker deletion command sent to Firestore for:", pointId);
-                            // Firestore's onSnapshot listener will handle removing the marker from the map
+                            console.log("Marker deleted from Firestore:", pointId);
+                            // After point is deleted, check and update the path
+                            checkAndUpdatePathAfterPointDeletion(deletedPointUserId, deletedPointCoordinates);
                         })
                         .catch(error => {
-                            console.error("Error deleting marker from Firestore:", pointId, error);
-                            alert("Error deleting marker. See console for details.");
+                            console.error("Error deleting marker from Firestore:", error);
+                            alert("Error deleting marker. See console.");
                         });
-                } else {
-                    console.error("Firestore (db) not initialized. Cannot delete marker.");
-                    alert("Database not available. Cannot delete marker.");
                 }
-                // Close info window if it was open on this marker
-                if (infoWindow && infoWindow.getMap() && infoWindow.anchor === marker) {
-                    infoWindow.close();
-                }
+                if (infoWindow) infoWindow.close(); 
             }
         });
-        console.log(`Contextmenu listener successfully ADDED to marker.content for pointId: ${pointId}`);
-    } else {
-        // Log why listener wasn't added, if relevant for debugging
-        if (!marker.content) {
-            console.warn(`Contextmenu listener NOT added for pointId: ${pointId} because marker.content is null.`);
-        } else if (!auth.currentUser) {
-            // console.log(`Contextmenu listener NOT added for pointId: ${pointId} because user is not logged in.`);
-        } else if (pointData.userId !== auth.currentUser.uid) {
-            // console.log(`Contextmenu listener NOT added for pointId: ${pointId} because user ${auth.currentUser.uid} does not own it (owner: ${pointData.userId}).`);
-        }
     }
-    markers[pointId] = marker; // Store the marker
+    markers[pointId] = marker; 
+}
+
+// --- NEW FUNCTION to handle path update/deletion after a point is deleted ---
+async function checkAndUpdatePathAfterPointDeletion(userId, deletedPointCoords) {
+    if (!db || !userId) return;
+    console.log(`Checking path for user ${userId} after point deletion.`);
+
+    const pathRef = db.collection('paths').doc(userId);
+    try {
+        const pathDoc = await pathRef.get();
+        if (pathDoc.exists) {
+            const pathData = pathDoc.data();
+            let currentPathCoordinates = pathData.coordinates || [];
+
+            // Filter out the deleted point
+            // Note: Firestore GeoPoints need to be compared by their latitude and longitude values
+            const newPathCoordinates = currentPathCoordinates.filter(coord => {
+                return !(coord.latitude === deletedPointCoords.latitude && coord.longitude === deletedPointCoords.longitude);
+            });
+
+            if (newPathCoordinates.length < 2) {
+                // If path becomes invalid (less than 2 points), delete the path document
+                console.log(`Path for user ${userId} has < 2 points after deletion. Deleting path document.`);
+                await pathRef.delete();
+                console.log(`Path document for user ${userId} deleted.`);
+            } else if (newPathCoordinates.length < currentPathCoordinates.length) {
+                // If path is still valid but changed, update it
+                console.log(`Path for user ${userId} updated. New length: ${newPathCoordinates.length}`);
+                await pathRef.update({ coordinates: newPathCoordinates });
+                console.log(`Path document for user ${userId} updated with new coordinates.`);
+            } else {
+                console.log(`Deleted point was not part of the stored path for user ${userId}. No path update needed.`);
+            }
+        } else {
+            console.log(`No path document found for user ${userId}. No path update needed.`);
+        }
+    } catch (error) {
+        console.error(`Error updating/deleting path for user ${userId}:`, error);
+    }
 }
 
 
 function drawPolyline(userId, pathCoordinates) {
-    if (userPolylines[userId]) {
-        userPolylines[userId].setMap(null); // Remove old polyline before drawing new one
+    if (userPolylines[userId]) { 
+        userPolylines[userId].setMap(null);
     }
     if (!map || typeof map.setCenter !== 'function' || !pathCoordinates || pathCoordinates.length < 2) {
-        console.warn("drawPolyline called but map not ready or invalid pathCoordinates. Aborting for userId:", userId);
+        console.warn("drawPolyline called but map not ready or invalid pathCoordinates. Aborting.");
         return;
     }
-    const userColor = userColors[userId] || '#0000FF'; // Default blue if no color assigned
+    const userColor = userColors[userId] || '#0000FF'; 
     const polyline = new google.maps.Polyline({
         path: pathCoordinates,
         geodesic: true,
         strokeColor: userColor,
         strokeOpacity: 1.0,
         strokeWeight: 3,
-        map: map // Initially add to map, visibility will be controlled by legend
+        map: map 
     });
-    userPolylines[userId] = polyline;
-    console.log("Polyline drawn for user:", userId, "with color:", userColor);
+    userPolylines[userId] = polyline; 
 
-    // Ensure visibility is set according to the legend checkbox
     const legendCheckbox = document.getElementById(`legend-user-${userId}`);
     polyline.setMap(legendCheckbox && legendCheckbox.checked ? map : null);
 }
 
-let temporaryPolyline = null;
+let temporaryPolyline = null; 
 function drawTemporaryPolyline(points) {
-    if (temporaryPolyline) {
-        temporaryPolyline.setMap(null); // Clear previous temporary polyline
+    if (temporaryPolyline) { 
+        temporaryPolyline.setMap(null);
     }
-    if (!map || typeof map.setCenter !== 'function' || !points || points.length < 2) {
+    if (!map || typeof map.setCenter !== 'function' || points.length < 2) {
          console.warn("drawTemporaryPolyline called but map not ready or not enough points. Aborting.");
         return;
     }
 
-    const currentUserColor = (auth.currentUser && userColors[auth.currentUser.uid]) ? userColors[auth.currentUser.uid] : '#FF0000'; // Default to red if no user color
-
     temporaryPolyline = new google.maps.Polyline({
         path: points,
         geodesic: true,
-        strokeColor: currentUserColor,
-        strokeOpacity: 0.7, // Slightly transparent
-        strokeWeight: 4,    // Slightly thicker
+        strokeColor: (auth.currentUser && userColors[auth.currentUser.uid]) || '#FF0000', 
+        strokeOpacity: 0.7, 
+        strokeWeight: 4,    
         map: map,
-        zIndex: 1000 // Ensure it's above other polylines
+        zIndex: 1000 
     });
-    console.log("Temporary polyline drawn with points:", points.length);
 }
 
 function clearAllMarkers() {
-    console.log('Clearing all markers from map. Current marker count:', Object.keys(markers).length);
+    console.log('Clearing all markers from map.');
     for (const id in markers) {
-        if (markers[id] && typeof markers[id].setMap === 'function') { // Check if setMap exists
+        if (markers[id] && markers[id].setMap) { 
              markers[id].setMap(null);
         }
-        delete markers[id]; // Also remove from the tracking object
     }
-    // markers = {}; // Re-initialize after clearing, though deleting individually also works.
-    console.log('All markers cleared. Marker count now:', Object.keys(markers).length);
 }
 
-
 function clearAllPolylines() {
-    console.log('Clearing all polylines from map. Current polyline count:', Object.keys(userPolylines).length);
+    console.log('Clearing all polylines from map.');
     for (const userId in userPolylines) {
         if (userPolylines[userId] && userPolylines[userId].setMap) {
             userPolylines[userId].setMap(null);
         }
-        delete userPolylines[userId]; // Also remove from the tracking object
     }
-    // userPolylines = {}; // Re-initialize
-    console.log('All polylines cleared. Polyline count now:', Object.keys(userPolylines).length);
 }
-
 
 if (togglePathButton) {
     console.log('toggle-path-button found. Adding click listener.');
     togglePathButton.addEventListener('click', () => {
-        if (!auth || !auth.currentUser) {
+        if (!auth || !auth.currentUser) { 
             alert("Please sign in to create a path.");
             return;
         }
         currentPathCreation.isCreating = !currentPathCreation.isCreating;
         if (currentPathCreation.isCreating) {
             togglePathButton.textContent = 'End Path';
-            togglePathButton.classList.add('active', 'bg-red-500', 'hover:bg-red-600'); // Active styling
-            togglePathButton.classList.remove('bg-green-500', 'hover:bg-green-600');
-            currentPathCreation.points = [];
-            if(temporaryPolyline) temporaryPolyline.setMap(null); // Clear any old temp polyline
-            alert("Path creation started. Click your markers in order (oldest to newest) to define the path. Click 'End Path' when finished.");
-            console.log("Path creation started.");
+            togglePathButton.classList.add('active'); 
+            currentPathCreation.points = []; 
+            if(temporaryPolyline) temporaryPolyline.setMap(null); 
+            alert("Path creation started. Click your markers in order to define the path. Click 'End Path' when finished.");
         } else {
             togglePathButton.textContent = 'Start Path';
-            togglePathButton.classList.remove('active', 'bg-red-500', 'hover:bg-red-600');
-            togglePathButton.classList.add('bg-green-500', 'hover:bg-green-600'); // Default styling
-
+            togglePathButton.classList.remove('active'); 
             if (currentPathCreation.points.length > 1) {
-                const pathDocId = auth.currentUser.uid; // Path ID is the user's UID
+                const pathDocId = auth.currentUser.uid; 
                 const pathCoordinatesForFirestore = currentPathCreation.points.map(p => new firebase.firestore.GeoPoint(p.lat, p.lng));
-                if (db) {
-                    console.log("Attempting to save path for user:", auth.currentUser.uid, "with points:", currentPathCreation.points);
-                    db.collection('paths').doc(pathDocId).set({ // Use set to overwrite existing path for the user
+                if (db) { 
+                    db.collection('paths').doc(pathDocId).set({ 
                         userId: auth.currentUser.uid,
                         coordinates: pathCoordinatesForFirestore,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -542,14 +500,12 @@ if (togglePathButton) {
                     });
                 } else {
                      console.error("Firestore (db) not initialized. Cannot save path.");
-                     alert("Database not available. Cannot save path.");
                 }
             } else {
-                alert("Path creation ended. Not enough points (at least 2 required) to save a path.");
-                console.log("Path creation ended, not enough points.");
+                alert("Path creation ended. Not enough points to save a path.");
             }
-            if(temporaryPolyline) temporaryPolyline.setMap(null); // Clear temp polyline
-            currentPathCreation.points = []; // Reset points
+            if(temporaryPolyline) temporaryPolyline.setMap(null);
+            currentPathCreation.points = [];
         }
     });
 } else {
@@ -562,68 +518,53 @@ function updateLegend(userIds) {
         console.warn("Legend container (legend-container) not found in DOM.");
         return;
     }
-    console.log("Updating legend for user IDs:", userIds);
-
-    let legendList = legendContainer.querySelector('#legend-list');
-    if (!legendList) {
-        legendContainer.innerHTML = ''; // Clear previous content if structure was different
-        const legendTitle = document.createElement('h4');
-        legendTitle.textContent = 'Legend';
-        legendTitle.className = 'text-lg font-semibold mb-2';
-        legendContainer.appendChild(legendTitle);
-        legendList = document.createElement('ul');
-        legendList.id = 'legend-list';
-        legendList.className = 'space-y-1';
-        legendContainer.appendChild(legendList);
+    console.log("Updating legend for users:", userIds);
+    const existingList = legendContainer.querySelector('#legend-list');
+    if (existingList) {
+        existingList.innerHTML = ''; 
     } else {
-        legendList.innerHTML = ''; // Clear existing list items
+         legendContainer.innerHTML = ''; 
+         const legendTitle = document.createElement('h4');
+         legendTitle.textContent = 'Legend';
+         legendContainer.appendChild(legendTitle);
+         const newList = document.createElement('ul');
+         newList.id = 'legend-list';
+         legendContainer.appendChild(newList);
     }
+    const legendList = legendContainer.querySelector('#legend-list') || legendContainer;
 
-    const uniqueUserIds = Array.from(new Set(userIds)); // Ensure unique IDs
-
-    uniqueUserIds.forEach(userId => {
-        const userColor = userColors[userId] || '#808080'; // Default gray for unknown
-        let displayName = `User ${userId.substring(0, 6)}...`;
+    userIds.forEach(userId => {
+        const userColor = userColors[userId] || '#808080'; 
+        let displayName = `User ${userId.substring(0, 6)}...`; 
         if (auth && auth.currentUser && userId === auth.currentUser.uid) {
             displayName = `${auth.currentUser.displayName || 'You'} (You)`;
-        } else if (auth && auth.currentUser) {
-            // Potentially fetch display names for other users if needed, or use a generic one
-            // For now, stick to User ID for others.
         }
-
-
+        
         const listItem = document.createElement('li');
-        listItem.className = 'flex items-center';
         listItem.innerHTML = `
-            <input type="checkbox" id="legend-user-${userId}" data-user-id="${userId}" checked class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-            <label for="legend-user-${userId}" class="flex items-center cursor-pointer">
+            <input type="checkbox" id="legend-user-${userId}" data-user-id="${userId}" checked style="margin-right: 5px;">
+            <label for="legend-user-${userId}" style="display: inline-flex; align-items: center; cursor:pointer;">
                 <span style="background-color:${userColor}; width:15px; height:15px; border-radius:50%; margin-right:8px; border:1px solid #555; display:inline-block;"></span>
-                <span class="text-sm">${displayName}</span>
+                ${displayName}
             </label>
         `;
         legendList.appendChild(listItem);
         const checkbox = listItem.querySelector(`#legend-user-${userId}`);
         checkbox.addEventListener('change', handleLegendCheckboxChange);
     });
-    if (uniqueUserIds.length === 0) {
-        legendList.innerHTML = '<li class="text-sm text-gray-500">No users with data on map.</li>';
-    }
 }
 
 function handleLegendCheckboxChange(event) {
     const checkbox = event.target;
-    const userId = checkbox.dataset.userId;
+    const userId = checkbox.dataset.userId; 
     const isChecked = checkbox.checked;
-    console.log(`Legend checkbox changed for user ${userId}: ${isChecked ? 'checked' : 'unchecked'}`);
     const targetMap = isChecked ? map : null;
 
-    // Toggle visibility for markers of this user
     for (const pointId in markers) {
-        if (markers[pointId] && markers[pointId].pointOwnerUserId === userId) {
+        if (markers[pointId].pointOwnerUserId === userId) {
             markers[pointId].setMap(targetMap);
         }
     }
-    // Toggle visibility for polyline of this user
     if (userPolylines[userId]) {
         userPolylines[userId].setMap(targetMap);
     }
@@ -631,62 +572,53 @@ function handleLegendCheckboxChange(event) {
 
 function updatePolylineVisibilityBasedOnLegend() {
     console.log("Updating polyline and marker visibility based on legend state.");
-    if (!map || typeof map.setCenter !== 'function') {
+    if (!map || typeof map.setCenter !== 'function') { 
         console.warn("Map object not ready in updatePolylineVisibilityBasedOnLegend. Aborting visibility update.");
         return;
     }
-    // Update polylines
     for (const userId in userPolylines) {
-        if (userPolylines[userId]) {
+        if (userPolylines[userId]) { 
             const checkbox = document.getElementById(`legend-user-${userId}`);
             userPolylines[userId].setMap(checkbox && checkbox.checked ? map : null);
         }
     }
-    // Update markers
     for (const pointId in markers) {
         const marker = markers[pointId];
-        if (marker && marker.pointOwnerUserId) {
+        if (marker && marker.pointOwnerUserId) { 
             const checkbox = document.getElementById(`legend-user-${marker.pointOwnerUserId}`);
             marker.setMap(checkbox && checkbox.checked ? map : null);
         }
     }
 }
 
-
-const distinctColors = [
+const distinctColors = [ 
     "#FF6B6B", "#4ECDC4", "#45B7D1", "#FED766", "#2AB7CA",
-    "#F0B67F", "#FE4A49", "#547980", "#9DE0AD", "#F4A688",
-    "#8A2BE2", "#FF1493", "#00CED1", "#FFD700", "#32CD32" // Added more colors
+    "#F0B67F", "#FE4A49", "#547980", "#9DE0AD", "#F4A688"
 ];
-let colorIndex = 0;
+let colorIndex = 0; 
 function assignUserColor(userId) {
-    if (!userColors[userId]) {
+    if (!userColors[userId]) { 
         userColors[userId] = distinctColors[colorIndex % distinctColors.length];
         colorIndex++;
-        console.log(`Assigned color ${userColors[userId]} to user ${userId}`);
     }
     return userColors[userId];
 }
 
 function darkenColor(hex, percent) {
-    hex = hex.replace(/^\s*#|\s*$/g, '');
-    if (hex.length === 3) {
+    hex = hex.replace(/^\s*#|\s*$/g, ''); 
+    if (hex.length === 3) { 
         hex = hex.replace(/(.)/g, '$1$1');
     }
     let r = parseInt(hex.substr(0, 2), 16),
         g = parseInt(hex.substr(2, 2), 16),
         b = parseInt(hex.substr(4, 2), 16);
-    percent = Math.min(100, Math.max(0, percent)); // Ensure percent is between 0 and 100
-    r = Math.max(0, Math.round(r * (100 - percent) / 100)); // Ensure color component doesn't go below 0
-    g = Math.max(0, Math.round(g * (100 - percent) / 100));
-    b = Math.max(0, Math.round(b * (100 - percent) / 100));
+    percent = Math.min(100, Math.max(0, percent)); 
+    r = Math.round(r * (100 - percent) / 100);
+    g = Math.round(g * (100 - percent) / 100);
+    b = Math.round(b * (100 - percent) / 100);
     return '#' +
         (r < 16 ? '0' : '') + r.toString(16) +
         (g < 16 ? '0' : '') + g.toString(16) +
         (b < 16 ? '0' : '') + b.toString(16);
 }
 console.log("app.js loaded and executed. Ensure Firebase config is correct and DOM elements exist.");
-
-// Ensure the initMap function is globally available if the Maps API script loads asynchronously and calls it.
-window.initMap = initMap;
-
