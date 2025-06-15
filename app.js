@@ -226,9 +226,8 @@ function setupFirestoreListeners(currentUserIdInternal) {
                 userPolylines[pathUserId].setMap(null);
                 delete userPolylines[pathUserId]; 
             }
-             // If a path was removed (e.g. due to having less than 2 points after a marker deletion)
             if (change.type === "removed") {
-                delete userPathData[pathUserId]; // Clear local cache of path data
+                delete userPathData[pathUserId]; 
                 console.log(`Path for user ${pathUserId} was removed from Firestore, polyline cleared.`);
             }
         });
@@ -243,7 +242,6 @@ function setupFirestoreListeners(currentUserIdInternal) {
                 drawPolyline(pathUserId, userPathData[pathUserId]);
                 usersForLegend.add(pathUserId);
             } else if (path.coordinates && path.coordinates.length <= 1) {
-                // Path became invalid (e.g., after marker deletion), ensure it's visually cleared
                 if (userPolylines[pathUserId]) {
                     userPolylines[pathUserId].setMap(null);
                     delete userPolylines[pathUserId];
@@ -293,9 +291,11 @@ function drawMarker(pointId, pointData) {
 
     marker.pointId = pointId;
     marker.pointOwnerUserId = pointData.userId; 
-    marker.pointData = pointData; // Store the full data object on the marker
+    marker.pointData = pointData; 
 
-    marker.addListener('click', () => {
+    // Left-click listener
+    marker.addListener('gmp-click', () => { // Using 'gmp-click' as recommended for AdvancedMarkerElement
+        console.log(`Left-click detected on marker ${pointId}`);
         if (currentPathCreation.isCreating && auth.currentUser && pointData.userId === auth.currentUser.uid) {
             const pointLocation = { lat: pointData.coordinates.latitude, lng: pointData.coordinates.longitude };
             currentPathCreation.points.push(pointLocation);
@@ -303,7 +303,7 @@ function drawMarker(pointId, pointData) {
             if (currentPathCreation.points.length > 1) {
                 drawTemporaryPolyline(currentPathCreation.points); 
             }
-            infoWindow.close(); 
+            if(infoWindow) infoWindow.close(); 
         } else if (auth.currentUser && pointData.userId === auth.currentUser.uid) {
             const content = document.createElement('div');
             content.innerHTML = `
@@ -320,23 +320,32 @@ function drawMarker(pointId, pointData) {
                     db.collection('points').doc(pointId).update({ note: newNote })
                         .then(() => {
                             console.log("Note updated");
-                            infoWindow.close();
+                            if(infoWindow) infoWindow.close();
                         })
                         .catch(error => console.error("Error updating note: ", error));
                 }
             });
-            infoWindow.setContent(content);
-            infoWindow.open({map: map, anchor: marker}); 
+            if(infoWindow) {
+                infoWindow.setContent(content);
+                infoWindow.open({map: map, anchor: marker}); 
+            }
         } else {
-            infoWindow.setContent(`<div class="infowindow-content">User: ${pointData.userId}<br>Note: ${pointData.note || 'No note'}</div>`);
-            infoWindow.open({map: map, anchor: marker});
+            if(infoWindow) {
+                infoWindow.setContent(`<div class="infowindow-content">User: ${pointData.userId}<br>Note: ${pointData.note || 'No note'}</div>`);
+                infoWindow.open({map: map, anchor: marker});
+            }
         }
     });
 
-    // --- MODIFIED MARKER DELETION LOGIC ---
+    // --- MODIFIED RIGHT-CLICK (CONTEXTMENU) LOGIC ---
     if (auth.currentUser && pointData.userId === auth.currentUser.uid) {
-        marker.addListener('contextmenu', (e) => { 
+        // Add the listener to the marker's content (the visible HTML element)
+        marker.content.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); // Prevent the browser's default right-click menu
+            console.log(`Right-click event fired for marker ${pointId}. User owns this marker.`);
+            
             if (confirm("Are you sure you want to delete this marker?")) {
+                console.log(`User confirmed deletion for marker ${pointId}.`);
                 const deletedPointCoordinates = { 
                     latitude: pointData.coordinates.latitude, 
                     longitude: pointData.coordinates.longitude 
@@ -346,7 +355,7 @@ function drawMarker(pointId, pointData) {
                 if (db) {
                     db.collection('points').doc(pointId).delete()
                         .then(() => {
-                            console.log("Marker deleted from Firestore:", pointId);
+                            console.log("Marker deletion initiated in Firestore for:", pointId);
                             // After point is deleted, check and update the path
                             checkAndUpdatePathAfterPointDeletion(deletedPointUserId, deletedPointCoordinates);
                         })
@@ -356,11 +365,14 @@ function drawMarker(pointId, pointData) {
                         });
                 }
                 if (infoWindow) infoWindow.close(); 
+            } else {
+                console.log(`User cancelled deletion for marker ${pointId}.`);
             }
         });
     }
     markers[pointId] = marker; 
 }
+
 
 // --- NEW FUNCTION to handle path update/deletion after a point is deleted ---
 async function checkAndUpdatePathAfterPointDeletion(userId, deletedPointCoords) {
@@ -375,21 +387,20 @@ async function checkAndUpdatePathAfterPointDeletion(userId, deletedPointCoords) 
             let currentPathCoordinates = pathData.coordinates || [];
 
             // Filter out the deleted point
-            // Note: Firestore GeoPoints need to be compared by their latitude and longitude values
             const newPathCoordinates = currentPathCoordinates.filter(coord => {
                 return !(coord.latitude === deletedPointCoords.latitude && coord.longitude === deletedPointCoords.longitude);
             });
 
-            if (newPathCoordinates.length < 2) {
-                // If path becomes invalid (less than 2 points), delete the path document
-                console.log(`Path for user ${userId} has < 2 points after deletion. Deleting path document.`);
-                await pathRef.delete();
-                console.log(`Path document for user ${userId} deleted.`);
-            } else if (newPathCoordinates.length < currentPathCoordinates.length) {
-                // If path is still valid but changed, update it
-                console.log(`Path for user ${userId} updated. New length: ${newPathCoordinates.length}`);
-                await pathRef.update({ coordinates: newPathCoordinates });
-                console.log(`Path document for user ${userId} updated with new coordinates.`);
+            if (newPathCoordinates.length < currentPathCoordinates.length) { // Check if a point was actually removed
+                if (newPathCoordinates.length < 2) {
+                    // If path becomes invalid (less than 2 points), delete the path document
+                    console.log(`Path for user ${userId} has < 2 points after deletion. Deleting path document.`);
+                    await pathRef.delete();
+                } else {
+                    // If path is still valid but changed, update it
+                    console.log(`Path for user ${userId} updated. New length: ${newPathCoordinates.length}`);
+                    await pathRef.update({ coordinates: newPathCoordinates });
+                }
             } else {
                 console.log(`Deleted point was not part of the stored path for user ${userId}. No path update needed.`);
             }
